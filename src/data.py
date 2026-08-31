@@ -79,7 +79,7 @@ def load_graph(feature_mode: str = "all") -> tuple[Data, np.ndarray]:
 
     y = torch.full((len(df),), -1, dtype=torch.long)
     labelled = df["y"].notna().values
-    y[labelled] = torch.tensor(df.loc[labelled, "y"].values, dtype=torch.long)
+    y[labelled] = torch.tensor(df.loc[labelled, "y"].values.copy(), dtype=torch.long)
 
     data = Data(x=x, edge_index=edge_index, y=y)
     data.labelled = torch.tensor(labelled)

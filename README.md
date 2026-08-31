@@ -72,17 +72,43 @@ breakdown.
 
 ## Results
 
-*(To be filled in from `results/` once runs complete. Report the actual
-numbers — including the cases where the GNN does not beat XGBoost, if that
-is what happens.)*
+All numbers below are read directly from the JSON reports in `results/`
+(test window: time steps 35-49; illicit class only).
 
 | Model | Features | Precision | Recall | F1 | PR-AUC | ECE |
 |---|---|---|---|---|---|---|
-| XGBoost | all | | | | | |
-| MLP | all | | | | | |
-| GraphSAGE | all | | | | | |
-| GAT | all | | | | | |
-| GraphSAGE | local | | | | | |
+| XGBoost | all | 0.866 | 0.734 | 0.795 | 0.799 | 0.022 |
+| MLP | all | 0.622 | 0.653 | 0.637 | 0.603 | 0.035 |
+| GraphSAGE | all | 0.725 | 0.606 | 0.660 | 0.680 | 0.031 |
+| GAT | all | 0.349 | 0.690 | 0.463 | 0.415 | 0.095 |
+| GraphSAGE | local | 0.413 | 0.717 | 0.524 | 0.706 | 0.076 |
+
+XGBoost, the graph-free baseline, beats every GNN by a wide margin on both
+F1 and PR-AUC — topology did not help on this split, and the comparison
+this project is built around comes out negative for the graph. GraphSAGE
+edges out the graph-free MLP (F1 0.660 vs 0.637, PR-AUC 0.680 vs 0.603), so
+message passing adds a small amount of value on top of the pre-aggregated
+features, but not enough to close the gap to XGBoost. GAT is the worst
+model in the comparison, underperforming even the plain MLP, so more
+parameters and attention did not translate into better generalisation
+across the temporal split. The `--features local` run complicates the
+"features already did the work" story rather than confirming it: stripped
+of the 72 pre-aggregated neighbourhood features, GraphSAGE's PR-AUC (0.706)
+is actually slightly *higher* than the all-features run (0.680), even
+though its F1 at the default 0.5 threshold is much lower (0.524 vs 0.660,
+driven by a precision collapse to 0.413) — the model's ranking of illicit
+accounts is at least as good from topology alone, it is just miscalibrated
+at that threshold (also visible in its ECE, 0.076 vs 0.031). The
+calibration audit shows XGBoost is both the best classifier and the best
+calibrated (ECE 0.022); GAT is both the worst classifier and the worst
+calibrated (ECE 0.095), and confidence tracks correctness only weakly
+everywhere (correlation 0.30-0.45, never strong). Every model, without
+exception, collapses after time step 43: PR-AUC falls from the 0.6-1.0
+range in steps 35-42 to below 0.06 for nearly every step from 44 onward
+(step 43 itself scores nearly 0 across all five runs) — a single aggregate
+test score would completely hide this, and it lines up exactly with the
+dark-market shutdown the Elliptic paper documents, so it reads as a real
+distribution shift rather than a model-specific failure.
 
 ## Data
 

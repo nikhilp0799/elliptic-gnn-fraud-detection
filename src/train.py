@@ -5,6 +5,16 @@ Usage:
     python -m src.train --model xgb  --features local
 """
 
+import os
+
+# torch, xgboost and scikit-learn each bundle their own libomp.dylib on macOS.
+# Having more than one OpenMP runtime loaded in the same process corrupts
+# their shared thread-pool barrier state and segfaults inside XGBoost's
+# hist tree method (and, less reliably, inside torch tensor ops) on Apple
+# Silicon. Must be set before any of those libraries are imported.
+os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")
+os.environ.setdefault("OMP_NUM_THREADS", "1")
+
 import argparse
 import json
 from pathlib import Path
